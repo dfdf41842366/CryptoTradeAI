@@ -221,6 +221,87 @@ def api_status():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
+@app.route('/api/verify-data-authenticity')
+def verify_data_authenticity():
+    try:
+        # Verify real-time data authenticity
+        verification_results = {
+            "timestamp": datetime.now().isoformat(),
+            "tests": []
+        }
+        
+        # Test 1: Yahoo Finance vs Internal Data
+        try:
+            yahoo_data = yf.Ticker("AAPL").info
+            internal_data = market_data_service.get_stock_data("AAPL")
+            
+            if yahoo_data and internal_data:
+                yahoo_price = yahoo_data.get('currentPrice', 0)
+                internal_price = internal_data.get('price', 0)
+                
+                price_diff = abs(yahoo_price - internal_price) / yahoo_price * 100 if yahoo_price > 0 else 100
+                
+                verification_results["tests"].append({
+                    "name": "Price Consistency Check",
+                    "passed": price_diff < 5,
+                    "details": f"Yahoo: ${yahoo_price:.2f}, Internal: ${internal_price:.2f}, Diff: {price_diff:.1f}%"
+                })
+        except Exception as e:
+            verification_results["tests"].append({
+                "name": "Price Consistency Check",
+                "passed": False,
+                "details": f"Error: {str(e)}"
+            })
+        
+        # Test 2: Scanner Results Authenticity
+        try:
+            scan_results = scanner_service.perform_scan()
+            fake_symbols = ["TEST", "FAKE", "MOCK", "SAMPLE", "DEMO"]
+            
+            has_fake_symbols = any(result.get('symbol', '') in fake_symbols for result in scan_results)
+            
+            verification_results["tests"].append({
+                "name": "No Fake Symbols Check",
+                "passed": not has_fake_symbols,
+                "details": f"Scanned {len(scan_results)} symbols, no fake symbols detected" if not has_fake_symbols else "Fake symbols found"
+            })
+        except Exception as e:
+            verification_results["tests"].append({
+                "name": "No Fake Symbols Check", 
+                "passed": False,
+                "details": f"Error: {str(e)}"
+            })
+        
+        # Test 3: Volume Data Realism
+        try:
+            volume_leaders = market_data_service.get_volume_leaders()
+            realistic_volume = all(stock.get('volume', 0) > 100000 for stock in volume_leaders[:5])
+            
+            verification_results["tests"].append({
+                "name": "Realistic Volume Check",
+                "passed": realistic_volume,
+                "details": f"Top 5 volume leaders all have >100K volume" if realistic_volume else "Suspicious volume data detected"
+            })
+        except Exception as e:
+            verification_results["tests"].append({
+                "name": "Realistic Volume Check",
+                "passed": False,
+                "details": f"Error: {str(e)}"
+            })
+        
+        # Calculate overall authenticity score
+        passed_tests = sum(1 for test in verification_results["tests"] if test["passed"])
+        total_tests = len(verification_results["tests"])
+        authenticity_score = (passed_tests / total_tests * 100) if total_tests > 0 else 0
+        
+        verification_results["authenticity_score"] = authenticity_score
+        verification_results["summary"] = f"{passed_tests}/{total_tests} tests passed ({authenticity_score:.1f}%)"
+        
+        return jsonify({"success": True, "data": verification_results})
+        
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
 def start_background_services():
     """Start autonomous services in background threads"""
     def run_scanner():

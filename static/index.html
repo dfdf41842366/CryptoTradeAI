@@ -58,8 +58,11 @@
                         <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
                         <span>Live</span>
                     </div>
-                    <button @click="refreshData()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors">
+                    <button @click="refreshData()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded transition-colors mr-2">
                         <i class="fas fa-sync-alt mr-2"></i> Refresh
+                    </button>
+                    <button @click="verifyDataAuthenticity()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded transition-colors">
+                        <i class="fas fa-shield-alt mr-2"></i> Verify Data
                     </button>
                 </div>
             </div>
@@ -235,6 +238,40 @@
                     </div>
                 </div>
             </div>
+            
+            <!-- Data Verification Modal -->
+            <div x-show="showVerification" x-cloak class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full max-h-96 overflow-y-auto">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-bold">Data Authenticity Verification</h3>
+                        <button @click="showVerification = false" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                    <div x-show="verificationResults">
+                        <div class="mb-4">
+                            <div class="text-lg font-semibold" 
+                                 :class="verificationResults?.authenticity_score >= 80 ? 'text-green-400' : 'text-red-400'"
+                                 x-text="'Authenticity Score: ' + (verificationResults?.authenticity_score || 0) + '%'">
+                            </div>
+                            <div class="text-sm text-gray-400" x-text="verificationResults?.summary"></div>
+                        </div>
+                        <div class="space-y-2">
+                            <template x-for="test in verificationResults?.tests || []" :key="test.name">
+                                <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                    <div>
+                                        <div class="font-medium" x-text="test.name"></div>
+                                        <div class="text-sm text-gray-400" x-text="test.details"></div>
+                                    </div>
+                                    <div :class="test.passed ? 'text-green-400' : 'text-red-400'">
+                                        <i :class="test.passed ? 'fas fa-check-circle' : 'fas fa-times-circle'"></i>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -254,6 +291,8 @@
                     autonomyLevel: 95.7,
                     performance: 91.3
                 },
+                showVerification: false,
+                verificationResults: null,
 
                 init() {
                     this.loadSignals();
@@ -362,6 +401,21 @@
                     this.checkAriaStatus();
                     if (this.activeTab === 'scanner') {
                         this.runScan();
+                    }
+                },
+
+                async verifyDataAuthenticity() {
+                    try {
+                        const response = await fetch('/api/verify-data-authenticity');
+                        const data = await response.json();
+                        if (data.success) {
+                            this.verificationResults = data.data;
+                            this.showVerification = true;
+                        } else {
+                            alert('Verification failed: ' + data.error);
+                        }
+                    } catch (error) {
+                        alert('Verification error: ' + error.message);
                     }
                 }
             }

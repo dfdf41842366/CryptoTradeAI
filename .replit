@@ -18,8 +18,21 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 verify_python_env.py"
+args = "pip install -r requirements.txt"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 app.py"
+
+[[workflows.workflow]]
+name = "Test All Systems"
+author = 43779955
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "pip install -r requirements.txt"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python3 test_all_systems.py"
