@@ -40,3 +40,7 @@ args = "pip install -r requirements.txt"
 [[workflows.workflow.tasks]]
 task = "shell.exec"
 args = "python3 test_all_systems.py"
+
+[[ports]]
+localPort = 5000
+externalPort = 80
