@@ -1,11 +1,12 @@
-modules = ["nodejs-20", "web"]
-run = "npm run dev"
+modules = ["python-3.12", "web"]
+run = "python3 app.py"
 
 [nix]
 channel = "stable-24_05"
+packages = ["cairo", "ffmpeg-full", "freetype", "ghostscript", "glibcLocales", "gobject-introspection", "gtk3", "libxcrypt", "pkg-config", "qhull", "tcl", "tk", "xcodebuild", "xsimd", "zlib"]
 
 [deployment]
-run = ["sh", "-c", "npm run dev"]
+run = ["python3", "app.py"]
 
 [workflows]
 runButton = "Python Trading Platform"
@@ -17,4 +18,4 @@ mode = "sequential"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "python3 app.py"
+args = "python app.py"
